@@ -1,1 +1,13 @@
-# Siesta
+Após o Siesta está instalado em seu dispositivo para rodar o teste basta seguir os seguintes passos.
+
+1º Baixar a pasta "Teste_Opt_Graphene"
+2º Verificar se os arquivos C.psf (pseudo), C2.fdf (input) estão presentes. Os demais arquivos serão úteis posteriormente.
+3º Abrir o terminal a pastir desta pasta (basta clicar com o direito e abrir terminal).
+4º Para efetuar o cálculo em paralelo (usando mais de um núcleo do processador) use
+
+mpirun -np # siesta < C2.fdf |tee C2.out
+
+	OBS.: 	- no lugar de # deverá ser inserido o numero de núcleos do processador.
+		- o comando |tee serve para visualizar o cálculo sendo execultado.
+		- para não visualizar basta trocar invocar o comando como:
+			mpirun -np # siesta < C2.fdf > C2.out &
