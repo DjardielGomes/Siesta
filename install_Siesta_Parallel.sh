@@ -4,8 +4,9 @@
 #0. Objetivo: Este documento contém instruções passo a passo para prosseguir com uma (esperançosamente) instalação bem-sucedida do software SIESTA (Iniciativa Espanhola para Simulações Eletrônicas com Milhares de Átomos) no Linux (testado com Ubuntu 18.04) usando as ferramentas GCC e OpenMPI para paralelismo. Para obter uma construção paralela do SIESTA, você deve primeiro determinar que tipo de paralelismo você precisa. É aconselhável usar MPI para cálculos com um número moderado de núcleos. Para centenas de threads, o paralelismo híbrido usando MPI e OpenMP pode ser necessário.
 ########################################################################################
 #0.0 Atualizando o sistema
-echo "Atualizando o sistema"
+echo "Iniciando a instalação do Siesta em Paralelo"
 sudo apt-get update
+echo "Atualizando o sistema"
 sudo apt-get upgrade -y
 ########################################################################################
 #1. Instalando os pré-requisitos: Presumimos que você esteja executando todos os comandos abaixo como um usuário comum (não root), portanto, usamos sudo quando necessário. Isso porque mpirun NÃO gosta de ser executado como root.
@@ -14,6 +15,7 @@ sudo apt install python python3 -y
 sudo apt install build-essential g++ gfortran libreadline-dev m4 xsltproc -y
 # Agora instale o software e bibliotecas OpenMPI ou MPICH:
 sudo apt install openmpi-common openmpi-bin libopenmpi-dev -y
+sudo apt-get install make -y
 #OU , se preferir, instale a implementação mpich do MPI:
 # sudo apt install mpich libcr-dev -y
 #NÃO instale os dois pacotes (OpenMPI e MPICH).
@@ -23,10 +25,11 @@ echo "Criando os diretórios de instalação"
 SIESTA_DIR=/opt/siesta
 OPENBLAS_DIR=/opt/openblas
 SCALAPACK_DIR=/opt/scalapack
-CALCULATIONS_DIR=/home/$USER/SIESTA_CALCULATIONS
-sudo mkdir $SIESTA_DIR $OPENBLAS_DIR $SCALAPACK_DIR $CALCULATIONS_DIR
+CALCULATIONS_DIR=/home/$USER/Siesta
+mkdir $CALCULATIONS_DIR
+sudo mkdir $SIESTA_DIR $OPENBLAS_DIR $SCALAPACK_DIR
 # permissões temporariamente perdidas (reverteremos mais tarde)
-sudo chmod -R 777 $SIESTA_DIR $OPENBLAS_DIR $SCALAPACK_DIR $CALCULATIONS_DIR
+sudo chmod -R 777 $SIESTA_DIR $OPENBLAS_DIR $SCALAPACK_DIR
 ########################################################################################
 #3. Instalando as bibliotecas: Para executar o siesta em paralelo usando MPI, você precisa de bibliotecas de blas e lapack não threaded junto com uma biblioteca de scalapack padrão.
 echo "Instalando as bibliotecas"
@@ -63,7 +66,8 @@ wget https://github.com/ElectronicStructureLibrary/flook/releases/download/v0.7.
 (./install_flook.bash 2>&1) | tee install_flook.log
 #4.1.2 Instalando o netcdf (Esse demora bastante, caso der erro verifique o loginstall_netcdf4.log)
 cd $SIESTA_DIR/siesta-4.1-b3/Docs
-wget https://zlib.net/zlib-1.2.11.tar.gz
+wget https://zlib.net/fossils/zlib-1.2.11.tar.gz
+#caso der erro deve baixar manualmente
 wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.18/src/hdf5-1.8.18.tar.bz2
 wget -O netcdf-c-4.4.1.1.tar.gz https://github.com/Unidata/netcdf-c/archive/v4.4.1.1.tar.gz
 wget -O netcdf-fortran-4.4.4.tar.gz https://github.com/Unidata/netcdf-fortran/archive/v4.4.4.tar.gz
@@ -76,44 +80,36 @@ cd $SIESTA_DIR/siesta-4.1-b3/Obj
 sh ../Src/obj_setup.sh
 make OBJDIR=Obj
 ########################################################################################
-#5. Reverter as permissões de super usuário
-#echo "Revertendo as permissões"
-#sudo chown -R root:root $SIESTA_DIR $OPENBLAS_DIR $SCALAPACK_DIR $CALCULATIONS_DIR
-#sudo chmod -R 755 $SIESTA_DIR $OPENBLAS_DIR $SCALAPACK_DIR $CALCULATIONS_DIR
-########################################################################################
-#USE ESSE BLOCO PARA SITUAÇÕES QUE NÃO EXISTE NENHUMA VERSÃO DO SIESTA INSTALADA
-########################################################################################
-#6. Copiando o Siesta para um local mais adequado
+#5. Copiando o Siesta para um local mais adequado
 echo "Copiando o Siesta"
 cd $SIESTA_DIR/siesta-4.1-b3/Obj
 sudo cp siesta /usr/local/bin
 ########################################################################################
 # CASO JÁ TENHA INSTALADO O SIESTA EM SERIAL NA MÁQUINA DESMARQUE ESSE BOX E ATENTE PARA O LOCAL ONDE FOI INSTALADO O SIESTA
 ########################################################################################
-#7.Criar pasta SIESTA_Calculations
-#teste 
-cd $CALCULATIONS_DIR 
-sudo wget https://github.com/DjardielGomes/Siesta/archive/refs/heads/main.zip
-sudo unzip main.zip
-sudo mv Siesta-main Git-Hub
-sudo rm main.zip
-#5. Reverter as permissões de super usuário
+#6. Reverter as permissões de super usuário
 echo "Revertendo as permissões"
 sudo chown -R root:root $SIESTA_DIR $OPENBLAS_DIR $SCALAPACK_DIR
 sudo chmod -R 755 $SIESTA_DIR $OPENBLAS_DIR $SCALAPACK_DIR
-
+#7.Criar pasta SIESTA_Calculations
+#teste 
+cd $CALCULATIONS_DIR 
+wget https://github.com/DjardielGomes/Siesta/archive/refs/heads/main.zip
+unzip main.zip
+mv Siesta-main Git-Hub
+rm main.zip
 #Testando com o grafeno
-#cd $CALCULATIONS_DIR/Git-Hub/Git-Hub/Teste_Opt_Graphene/
-#mpirun -np 4 siesta -in C2.fdf |tee C2.out
+cd Git-Hub/Teste_Opt_Graphene
+mpirun -np 4 siesta -in C2.fdf |tee C2.out
 #USE ESSE BLOCO PARA SITUAÇÕES QUE NÃO EXISTE NENHUMA VERSÃO DO SIESTA INSTALADA
 ########################################################################################
-echo "Execultando o Siesta em paralelo"
+#echo "Execultando o Siesta em paralelo"
 cd 
 siesta
+#poweroff
 ########################################################################################
 #EXEMPLO DE COMO RODAR
 #mpirun -np 4 siesta < C2.fdf |tee C2.out
 
 #Script adaptado de Bernhard Enders por Djota.
-
 
